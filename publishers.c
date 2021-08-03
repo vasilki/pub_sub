@@ -48,24 +48,26 @@ void publisher_init()
 void publisher_thread(void)
 {
     unsigned int loc_count;
+    unsigned int loc_pr = 0;
     unsigned int loc_takt = 0;
     char loc_buff[20];
 
     publisher_init();
 
-    while(1)
+    while(loc_takt < 200)
     {
         for(loc_count = 0; loc_count < GL_BLOCKING_SHMEM_PUBLISHERS_NUMBER; loc_count++)
         {
             memset(loc_buff,0,sizeof(loc_buff));
-            sprintf(loc_buff,"PUB:%d",loc_takt);
+            sprintf(loc_buff,"PUB:%d",loc_pr);
             sem_wait(GL_SHMEM_PUBLISHERS[loc_count].shmem.received);
             sem_wait(GL_SHMEM_PUBLISHERS[loc_count].shmem.mutex);
             memcpy(GL_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data,loc_buff,strnlen(loc_buff,GL_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data_size));
             sem_post(GL_SHMEM_PUBLISHERS[loc_count].shmem.mutex);
             sem_post(GL_SHMEM_PUBLISHERS[loc_count].shmem.published);
         }
-        loc_takt = (loc_takt + 1)%100;
+        loc_pr = (loc_pr + 1)%100;
+        loc_takt++;
     }
 
     return;

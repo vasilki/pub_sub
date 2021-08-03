@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include "shmem_pub_sub.h"
 
 extern void publishers(void);
 
-#define K_MAX_PUBLISHERS 1
-#define K_MAX_SUBSCRIBERS K_MAX_PUBLISHERS
+
 
 extern void broker_thread(void *par_args);
 extern void publisher_thread(void *par_args);
@@ -34,7 +34,7 @@ int main()
 
     for(loc_count = 0; loc_count < K_MAX_SUBSCRIBERS; loc_count++)
     {
-    //    pthread_create(&loc_thread_subscriber[loc_count],&loc_thread_attr,(void*)subscriber_thread,(void*)&loc_attr[0]);
+        pthread_create(&loc_thread_subscriber[loc_count],&loc_thread_attr,(void*)subscriber_thread,(void*)&loc_attr[0]);
     }
 
 
@@ -48,7 +48,7 @@ int main()
 
     for(loc_count = 0; loc_count < K_MAX_SUBSCRIBERS; loc_count++)
     {
-      //  pthread_join(loc_thread_subscriber[loc_count],NULL);
+        pthread_join(loc_thread_subscriber[loc_count],NULL);
     }
 
     return 0;
