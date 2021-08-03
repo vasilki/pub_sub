@@ -61,9 +61,9 @@ void subscriber_thread(void)
             sem_wait(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.published);
             sem_wait(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.mutex);
             memcpy(loc_buff,GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_data,GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_data_size);
+            printf(">SUB received message:%s\n",(char*)loc_buff);
             sem_post(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.mutex);
             sem_post(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.received);
-            printf("SUB received message:%s\n",(char*)loc_buff);
         }
 
 

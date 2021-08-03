@@ -12,7 +12,7 @@
 
 static T_SHMEM GL_SHMEM_PUBLISHERS[] =
 {
-    {"MUTEX_PUB1", "SHMEM_PUB1", 0, { 0, 0, 0, 0, 20 + 3*sizeof(sem_t), 0}}
+    {"SHMEM_PUB1", 0, { 0, 0, 0, 0, 20 + 3*sizeof(sem_t), 0}}
 };
 unsigned int GL_SHMEM_PUBLISHERS_NUMBER = sizeof(GL_SHMEM_PUBLISHERS)/sizeof(GL_SHMEM_PUBLISHERS[0]);
 
@@ -63,6 +63,7 @@ void publisher_thread(void)
             sem_wait(GL_SHMEM_PUBLISHERS[loc_count].shmem.received);
             sem_wait(GL_SHMEM_PUBLISHERS[loc_count].shmem.mutex);
             memcpy(GL_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data,loc_buff,strnlen(loc_buff,GL_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data_size));
+            printf(">PUB sent message PUB:%d\n",loc_pr);
             sem_post(GL_SHMEM_PUBLISHERS[loc_count].shmem.mutex);
             sem_post(GL_SHMEM_PUBLISHERS[loc_count].shmem.published);
         }
