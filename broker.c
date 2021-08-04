@@ -114,24 +114,34 @@ void broker_thread(void)
     {
         for(loc_count = 0; loc_count < GL_BLOCKING_SHMEM_PUBLISHERS_NUMBER; loc_count++)
         {
-            sem_wait(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.published);
-            sem_wait(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.mutex);
-//            memcpy(loc_buff,GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data,GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data_size);
-            memcpy(GL_SHMEM_TEMP_BUFFER[loc_count].shmem_data,GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data,GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data_size);
-            printf("<BRO received message:%s\n",(char*)GL_SHMEM_TEMP_BUFFER[loc_count].shmem_data);
-            sem_post(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.mutex);
-            sem_post(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.received);
+            if(sem_trywait(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.published) == 0)
+            {
+
+                sem_wait(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.mutex);
+    //            memcpy(loc_buff,GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data,GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data_size);
+                if(loc_count == 0)
+                {
+                    /*only for data from publisher.c*/
+                    memcpy(GL_SHMEM_TEMP_BUFFER[loc_count].shmem_data,GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data,GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data_size);
+                }
+                printf("<BRO received message:%s\n",(char*)GL_SHMEM_TEMP_BUFFER[loc_count].shmem_data);
+                sem_post(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.mutex);
+                sem_post(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.received);
+            }
         }
 
         for(loc_count = 0; loc_count < GL_BLOCKING_SHMEM_SUBSCRIBERS_NUMBER; loc_count++)
         {
-            sem_wait(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.received);
-            sem_wait(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.mutex);
-            memcpy(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_data,GL_SHMEM_TEMP_BUFFER[loc_count].shmem_data,GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_data_size);
-            printf(">BRO sent message:%s\n",(char*)GL_SHMEM_TEMP_BUFFER[loc_count].shmem_data);
-            sem_post(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.mutex);
-            sem_post(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.published);
+            if(sem_wait(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.received) == 0)
+            {
+                sem_wait(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.mutex);
+                memcpy(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_data,GL_SHMEM_TEMP_BUFFER[loc_count].shmem_data,GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_data_size);
+                printf(">BRO sent message:%s\n",(char*)GL_SHMEM_TEMP_BUFFER[loc_count].shmem_data);
+                sem_post(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.mutex);
+                sem_post(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.published);
+            }
         }
+
 
 
         loc_takt++;

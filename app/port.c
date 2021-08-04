@@ -83,11 +83,12 @@ void port_thread(void)
     while(loc_takt < 200)
     {
         /*LOCK BLOCKING BUFFER PORT-CORE*/
+        /*
         sem_wait(&GL_SHARED_BUFFER.mutex);
         memcpy(GL_TEMP_BUFFER_PUB,GL_SHARED_BUFFER.buffer_pub,GL_SHARED_BUFFER.size_pub);
         memcpy(GL_SHARED_BUFFER.buffer_sub,GL_TEMP_BUFFER_SUB,GL_SHARED_BUFFER.size_sub);
         sem_post(&GL_SHARED_BUFFER.mutex);
-
+*/
 
         /*READ DATA FROM BROKER*/
         for(loc_count = 0; loc_count < GL_SHMEM_SUBSCRIBERS_NUMBER; loc_count++)
