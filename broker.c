@@ -10,7 +10,7 @@
 #include <string.h>
 
 
-T_SHMEM GL_SHMEM_TEMP[K_MAX_SUBSCRIBERS];
+T_SHMEM GL_SHMEM_TEMP[K_MAX_CLIENTS];
 T_SHMEM GL_BLOCKING_SHMEM[] =
 {
     {"SHMEM_PUB1", 0}, /*only publisher*/
@@ -25,7 +25,7 @@ void broker_init_temp_buffers()
 {
     unsigned int loc_count;
 
-    for(loc_count = 0; loc_count < K_MAX_SUBSCRIBERS; loc_count++)
+    for(loc_count = 0; loc_count < K_MAX_CLIENTS; loc_count++)
     {
         GL_SHMEM_TEMP[loc_count].shmem = malloc(sizeof(T_BLOCKING_SHMEM));
         memset(GL_SHMEM_TEMP[loc_count].shmem,0,sizeof(T_BLOCKING_SHMEM));
@@ -98,23 +98,23 @@ void broker_thread(void)
                         memcpy(GL_SHMEM_TEMP[loc_count].shmem->app_out_data,
                                GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data,
                                GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size);
+                        printf("<BRO received message:%s\n",(char*)GL_SHMEM_TEMP[loc_count].shmem->app_out_data);
                        break;
                        case 1: /*app*/
                         memcpy(GL_SHMEM_TEMP[loc_count].shmem->app_out_data,
                                GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data,
                                GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size);
-                        GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size = GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size;
+                        GL_SHMEM_TEMP[loc_count].shmem->app_out_data_size = GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size;
 
                         memcpy(GL_BLOCKING_SHMEM[loc_count].shmem->app_in_data,
-                               GL_BLOCKING_SHMEM[0].shmem->app_out_data,
-                               GL_BLOCKING_SHMEM[0].shmem->app_out_data_size);
+                               GL_SHMEM_TEMP[0].shmem->app_out_data,
+                               GL_SHMEM_TEMP[0].shmem->app_out_data_size);
                         GL_BLOCKING_SHMEM[loc_count].shmem->app_in_data_size = GL_BLOCKING_SHMEM[0].shmem->app_out_data_size;
                         printf(">BRO sent message:%s\n",(char*)GL_BLOCKING_SHMEM[loc_count].shmem->app_in_data);
                        break;
                        default:
                        break;
                 }
-                printf("<BRO received message:%s\n",(char*)GL_SHMEM_TEMP[loc_count].shmem->app_out_data);
                 sem_post(&GL_BLOCKING_SHMEM[loc_count].shmem->mutex);
                 sem_post(&GL_BLOCKING_SHMEM[loc_count].shmem->ready);
             }

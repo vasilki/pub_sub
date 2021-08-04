@@ -25,6 +25,11 @@ void port_shmem_init()
     unsigned int loc_count;
     int loc_fd;
 
+    GL_SHARED_BUFFER.shmem = malloc(sizeof(T_BLOCKING_SHMEM));
+    memset(GL_SHARED_BUFFER.shmem,0,sizeof(T_BLOCKING_SHMEM));
+
+    sem_init(&GL_SHARED_BUFFER.shmem->mutex, 1, 1);
+
     for(loc_count = 0; loc_count < GL_SHMEM_APP_NUMBER; loc_count++)
     {
 
@@ -90,7 +95,6 @@ void port_init()
     static unsigned char loc_attr[8];
 
     port_shmem_init();
-    sem_init(&GL_SHARED_BUFFER.shmem->mutex, 1, 1);
 
     pthread_attr_init(&loc_thread_attr);
     pthread_create(&loc_thread_port,&loc_thread_attr,(void*)port_thread,(void*)&loc_attr[0]);
