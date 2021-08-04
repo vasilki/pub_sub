@@ -14,7 +14,7 @@ static T_SHMEM GL_SHMEM_PUBLISHERS[] =
 {
     {"SHMEM_PUB1", 0, { 0, 0, 0, 0, 20 + 3*sizeof(sem_t), 0}}
 };
-unsigned int GL_SHMEM_PUBLISHERS_NUMBER = sizeof(GL_SHMEM_PUBLISHERS)/sizeof(GL_SHMEM_PUBLISHERS[0]);
+static unsigned int GL_SHMEM_PUBLISHERS_NUMBER = sizeof(GL_SHMEM_PUBLISHERS)/sizeof(GL_SHMEM_PUBLISHERS[0]);
 
 
 void publisher_init()
@@ -54,7 +54,7 @@ void publisher_thread(void)
 
     while(loc_takt < 200)
     {
-        for(loc_count = 0; loc_count < GL_BLOCKING_SHMEM_PUBLISHERS_NUMBER; loc_count++)
+        for(loc_count = 0; loc_count < GL_SHMEM_PUBLISHERS_NUMBER; loc_count++)
         {
             memset(loc_buff,0,sizeof(loc_buff));
             sprintf(loc_buff,"PUB:%d",loc_pr);
