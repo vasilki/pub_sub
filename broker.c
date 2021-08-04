@@ -10,7 +10,16 @@
 #include <string.h>
 
 
-T_SHMEM_TEMP_BUFFER GL_SHMEM_TEMP_BUFFER[K_MAX_SUBSCRIBERS];
+T_SHMEM GL_SHMEM_TEMP[K_MAX_SUBSCRIBERS];
+T_SHMEM GL_BLOCKING_SHMEM[] =
+{
+    {"SHMEM_PUB1", 0}, /*only publisher*/
+    {"SHMEM_APP", 0} /*application*/
+};
+
+unsigned int GL_BLOCKING_SHMEM_NUMBER = sizeof(GL_BLOCKING_SHMEM)/sizeof(GL_BLOCKING_SHMEM[0]);
+
+
 
 void broker_init_temp_buffers()
 {
@@ -18,9 +27,9 @@ void broker_init_temp_buffers()
 
     for(loc_count = 0; loc_count < K_MAX_SUBSCRIBERS; loc_count++)
     {
-        memcpy(GL_SHMEM_TEMP_BUFFER[loc_count].shmem_name_sub, GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem_name,sizeof(GL_SHMEM_TEMP_BUFFER[loc_count].shmem_name_sub));
-        GL_SHMEM_TEMP_BUFFER[loc_count].shmem_data = malloc(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_data_size);
-        GL_SHMEM_TEMP_BUFFER[loc_count].shmem_data_size = GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_data_size;
+        GL_SHMEM_TEMP[loc_count].shmem = malloc(sizeof(T_BLOCKING_SHMEM));
+        memset(GL_SHMEM_TEMP[loc_count].shmem,0,sizeof(T_BLOCKING_SHMEM));
+        sprintf(GL_SHMEM_TEMP[loc_count].shmem_name,"TEMP");
     }
 
     return;
@@ -34,56 +43,22 @@ void broker_init()
 
     broker_init_temp_buffers();
 
-    for(loc_count = 0; loc_count < GL_BLOCKING_SHMEM_PUBLISHERS_NUMBER; loc_count++)
+    for(loc_count = 0; loc_count < GL_BLOCKING_SHMEM_NUMBER; loc_count++)
     {
         /*check if shmem exists*/
-        shm_unlink(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem_name);
+        shm_unlink(GL_BLOCKING_SHMEM[loc_count].shmem_name);
 
-        loc_fd = shm_open(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem_name, K_SHMEM_FLAG, K_SHMEM_MODE);
+        loc_fd = shm_open(GL_BLOCKING_SHMEM[loc_count].shmem_name, K_SHMEM_FLAG, K_SHMEM_MODE);
 
-        ftruncate(loc_fd, GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_size);
-        GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem_mmap =
-                mmap(NULL, GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_size, K_MMAP_FLAG, MAP_SHARED,
-                     loc_fd, 0);
+        ftruncate(loc_fd, sizeof(T_BLOCKING_SHMEM));
+        GL_BLOCKING_SHMEM[loc_count].shmem =
+                mmap(NULL, sizeof(T_BLOCKING_SHMEM), K_MMAP_FLAG, MAP_SHARED, loc_fd, 0);
 
         close(loc_fd);
 
-        GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.mutex = (sem_t *)GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem_mmap;
-        GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.published = (sem_t *)(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem_mmap + sizeof(sem_t));
-        GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.received = (sem_t *)(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem_mmap + 2 * sizeof(sem_t));
-        sem_init(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.mutex, 1, 1);
-        sem_init(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.published, 1, 0);
-        sem_init(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.received, 1, 1);
-
-        GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data = GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem_mmap + 3 * sizeof(sem_t);
-        GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data_size = GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_size - 3 * sizeof(sem_t);
+        sem_init(&GL_BLOCKING_SHMEM[loc_count].shmem->mutex, 1, 1);
+        sem_init(&GL_BLOCKING_SHMEM[loc_count].shmem->ready, 1, 0);
     }
-
-    for(loc_count = 0; loc_count < GL_BLOCKING_SHMEM_SUBSCRIBERS_NUMBER; loc_count++)
-    {
-        /*check if shmem exists*/
-        shm_unlink(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem_name);
-
-        loc_fd = shm_open(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem_name, K_SHMEM_FLAG, K_SHMEM_MODE);
-
-        ftruncate(loc_fd, GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_size);
-        GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem_mmap =
-                mmap(NULL, GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_size, K_MMAP_FLAG, MAP_SHARED,
-                     loc_fd, 0);
-
-        close(loc_fd);
-
-        GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.mutex = (sem_t *)GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem_mmap;
-        GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.published = (sem_t *)(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem_mmap + sizeof(sem_t));
-        GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.received = (sem_t *)(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem_mmap + 2 * sizeof(sem_t));
-        sem_init(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.mutex, 1, 1);
-        sem_init(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.published, 1, 0);
-        sem_init(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.received, 1, 1);
-
-        GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_data = GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem_mmap + 3 * sizeof(sem_t);
-        GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_data_size = GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_size - 3 * sizeof(sem_t);
-    }
-
 
     return;
 }
@@ -93,10 +68,10 @@ void broker_exit(void)
     unsigned int loc_count;
 
 
-    for(loc_count = 0; loc_count < GL_BLOCKING_SHMEM_PUBLISHERS_NUMBER; loc_count++)
+    for(loc_count = 0; loc_count < GL_BLOCKING_SHMEM_NUMBER; loc_count++)
     {
         /*check if shmem exists*/
-        shm_unlink(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem_name);
+        shm_unlink(GL_BLOCKING_SHMEM[loc_count].shmem_name);
     }
 
     return;
@@ -112,37 +87,38 @@ void broker_thread(void)
 
     while(loc_takt < 200)
     {
-        for(loc_count = 0; loc_count < GL_BLOCKING_SHMEM_PUBLISHERS_NUMBER; loc_count++)
+        for(loc_count = 0; loc_count < GL_BLOCKING_SHMEM_NUMBER; loc_count++)
         {
-            if(sem_trywait(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.published) == 0)
+            if(sem_trywait(&GL_BLOCKING_SHMEM[loc_count].shmem->mutex) == 0)
             {
-
-                sem_wait(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.mutex);
-    //            memcpy(loc_buff,GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data,GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data_size);
-                if(loc_count == 0)
+                switch(loc_count)
                 {
-                    /*only for data from publisher.c*/
-                    memcpy(GL_SHMEM_TEMP_BUFFER[loc_count].shmem_data,GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data,GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data_size);
+                       case 0: /*publisher*/
+                        /*only for data from publisher.c*/
+                        memcpy(GL_SHMEM_TEMP[loc_count].shmem->app_out_data,
+                               GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data,
+                               GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size);
+                       break;
+                       case 1: /*app*/
+                        memcpy(GL_SHMEM_TEMP[loc_count].shmem->app_out_data,
+                               GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data,
+                               GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size);
+                        GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size = GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size;
+
+                        memcpy(GL_BLOCKING_SHMEM[loc_count].shmem->app_in_data,
+                               GL_BLOCKING_SHMEM[0].shmem->app_out_data,
+                               GL_BLOCKING_SHMEM[0].shmem->app_out_data_size);
+                        GL_BLOCKING_SHMEM[loc_count].shmem->app_in_data_size = GL_BLOCKING_SHMEM[0].shmem->app_out_data_size;
+                        printf(">BRO sent message:%s\n",(char*)GL_BLOCKING_SHMEM[loc_count].shmem->app_in_data);
+                       break;
+                       default:
+                       break;
                 }
-                printf("<BRO received message:%s\n",(char*)GL_SHMEM_TEMP_BUFFER[loc_count].shmem_data);
-                sem_post(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.mutex);
-                sem_post(GL_BLOCKING_SHMEM_PUBLISHERS[loc_count].shmem.received);
+                printf("<BRO received message:%s\n",(char*)GL_SHMEM_TEMP[loc_count].shmem->app_out_data);
+                sem_post(&GL_BLOCKING_SHMEM[loc_count].shmem->mutex);
+                sem_post(&GL_BLOCKING_SHMEM[loc_count].shmem->ready);
             }
         }
-
-        for(loc_count = 0; loc_count < GL_BLOCKING_SHMEM_SUBSCRIBERS_NUMBER; loc_count++)
-        {
-            if(sem_wait(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.received) == 0)
-            {
-                sem_wait(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.mutex);
-                memcpy(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_data,GL_SHMEM_TEMP_BUFFER[loc_count].shmem_data,GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.shmem_data_size);
-                printf(">BRO sent message:%s\n",(char*)GL_SHMEM_TEMP_BUFFER[loc_count].shmem_data);
-                sem_post(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.mutex);
-                sem_post(GL_BLOCKING_SHMEM_SUBSCRIBERS[loc_count].shmem.published);
-            }
-        }
-
-
 
         loc_takt++;
     }

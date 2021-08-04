@@ -3,7 +3,7 @@
 #include <semaphore.h>
 
 #define K_MAX_PUBLISHERS 1
-#define K_MAX_SUBSCRIBERS K_MAX_PUBLISHERS
+#define K_MAX_SUBSCRIBERS 1
 #define K_DATA_SIZE 20
 
 #define K_SHMEM_FLAG (O_RDWR | O_CREAT | O_EXCL)
@@ -12,27 +12,19 @@
 
 typedef struct
 {
-    sem_t *mutex;
-    sem_t *published;
-    sem_t *received;
-    void *shmem_data;
-    const unsigned int shmem_size; /*include semaphores*/
-    unsigned int shmem_data_size; /*pure data without semaphores*/
+    sem_t mutex;
+    sem_t ready;
+    char app_in_data[K_DATA_SIZE];
+    char app_out_data[K_DATA_SIZE];
+    unsigned int app_in_data_size;
+    unsigned int app_out_data_size;
 }T_BLOCKING_SHMEM;
 
 typedef struct
 {
     char shmem_name[32];
-    void *shmem_mmap;
-    T_BLOCKING_SHMEM shmem;
+    T_BLOCKING_SHMEM *shmem;
 }T_SHMEM;
-
-typedef struct
-{
-    char shmem_name_sub[32];
-    void *shmem_data;
-    unsigned int shmem_data_size;
-}T_SHMEM_TEMP_BUFFER;
 
 
 

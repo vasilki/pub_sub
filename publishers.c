@@ -12,7 +12,7 @@
 
 static T_SHMEM GL_SHMEM_PUBLISHERS[] =
 {
-    {"SHMEM_PUB1", 0, { 0, 0, 0, 0, 20 + 3*sizeof(sem_t), 0}}
+    {"SHMEM_PUB1", 0}
 };
 static unsigned int GL_SHMEM_PUBLISHERS_NUMBER = sizeof(GL_SHMEM_PUBLISHERS)/sizeof(GL_SHMEM_PUBLISHERS[0]);
 
@@ -27,18 +27,11 @@ void publisher_init()
 
         loc_fd = shm_open(GL_SHMEM_PUBLISHERS[loc_count].shmem_name, O_RDWR, K_SHMEM_MODE);
 
-        GL_SHMEM_PUBLISHERS[loc_count].shmem_mmap =
-                mmap(NULL, GL_SHMEM_PUBLISHERS[loc_count].shmem.shmem_size, K_MMAP_FLAG, MAP_SHARED,
-                     loc_fd, 0);
+        GL_SHMEM_PUBLISHERS[loc_count].shmem =
+                mmap(NULL, sizeof(T_BLOCKING_SHMEM), K_MMAP_FLAG, MAP_SHARED, loc_fd, 0);
 
         close(loc_fd);
 
-        GL_SHMEM_PUBLISHERS[loc_count].shmem.mutex = (sem_t *)GL_SHMEM_PUBLISHERS[loc_count].shmem_mmap;
-        GL_SHMEM_PUBLISHERS[loc_count].shmem.published = (sem_t *)(GL_SHMEM_PUBLISHERS[loc_count].shmem_mmap + sizeof(sem_t));
-        GL_SHMEM_PUBLISHERS[loc_count].shmem.received = (sem_t *)(GL_SHMEM_PUBLISHERS[loc_count].shmem_mmap + 2 * sizeof(sem_t));
-
-        GL_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data = GL_SHMEM_PUBLISHERS[loc_count].shmem_mmap + 3 * sizeof(sem_t);
-        GL_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data_size = GL_SHMEM_PUBLISHERS[loc_count].shmem.shmem_size - 3 * sizeof(sem_t);
     }
 
     return;
@@ -50,7 +43,7 @@ void publisher_thread(void)
     unsigned int loc_count;
     unsigned int loc_pr = 0;
     unsigned int loc_takt = 0;
-    char loc_buff[20];
+    char loc_buff[K_DATA_SIZE];
 
     while(loc_takt < 200)
     {
@@ -58,12 +51,12 @@ void publisher_thread(void)
         {
             memset(loc_buff,0,sizeof(loc_buff));
             sprintf(loc_buff,"PUB:%d",loc_pr);
-            sem_wait(GL_SHMEM_PUBLISHERS[loc_count].shmem.received);
-            sem_wait(GL_SHMEM_PUBLISHERS[loc_count].shmem.mutex);
-            memcpy(GL_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data,loc_buff,strnlen(loc_buff,GL_SHMEM_PUBLISHERS[loc_count].shmem.shmem_data_size));
+            sem_wait(&GL_SHMEM_PUBLISHERS[loc_count].shmem->ready);
+            sem_wait(&GL_SHMEM_PUBLISHERS[loc_count].shmem->mutex);
+            memcpy(GL_SHMEM_PUBLISHERS[loc_count].shmem->app_out_data,loc_buff,
+                   strnlen(loc_buff,GL_SHMEM_PUBLISHERS[loc_count].shmem->app_out_data_size));
             printf(">PUB sent message PUB:%d\n",loc_pr);
-            sem_post(GL_SHMEM_PUBLISHERS[loc_count].shmem.mutex);
-            sem_post(GL_SHMEM_PUBLISHERS[loc_count].shmem.published);
+            sem_post(&GL_SHMEM_PUBLISHERS[loc_count].shmem->mutex);
         }
         loc_pr = (loc_pr + 1)%100;
         loc_takt++;

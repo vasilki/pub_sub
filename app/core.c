@@ -18,12 +18,12 @@ void core_thread(void)
     while(loc_takt < 200)
     {
         /*LOCK BLOCKING BUFFER PORT-CORE*/
-        sem_wait(&GL_SHARED_BUFFER.mutex);
+ /*       sem_wait(&GL_SHARED_BUFFER.mutex);
         printf("core received: %s\n",GL_SHARED_BUFFER.buffer_sub);
         snprintf((char*)GL_SHARED_BUFFER.buffer_pub,sizeof(GL_SHARED_BUFFER.buffer_pub),"CORE_%d",loc_takt);
         printf("core sent: %s\n",GL_SHARED_BUFFER.buffer_pub);
         sem_post(&GL_SHARED_BUFFER.mutex);
-
+*/
         loc_takt++;
     }
 
