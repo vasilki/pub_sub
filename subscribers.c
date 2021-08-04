@@ -18,6 +18,7 @@ unsigned int GL_SHMEM_SUBSCRIBERS_NUMBER = sizeof(GL_SHMEM_SUBSCRIBERS)/sizeof(G
 
 
 
+
 void subscriber_init()
 {
     unsigned int loc_count;
@@ -52,8 +53,6 @@ void subscriber_thread(void)
     unsigned int loc_takt = 0;
     char loc_buff[20];
 
-    subscriber_init();
-
     while(loc_takt < 200)
     {
         for(loc_count = 0; loc_count < GL_BLOCKING_SHMEM_SUBSCRIBERS_NUMBER; loc_count++)
@@ -72,3 +71,6 @@ void subscriber_thread(void)
 
     return;
 }
+
+
+

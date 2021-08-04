@@ -52,8 +52,6 @@ void publisher_thread(void)
     unsigned int loc_takt = 0;
     char loc_buff[20];
 
-    publisher_init();
-
     while(loc_takt < 200)
     {
         for(loc_count = 0; loc_count < GL_BLOCKING_SHMEM_PUBLISHERS_NUMBER; loc_count++)

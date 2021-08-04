@@ -10,7 +10,9 @@ extern void publishers(void);
 extern void broker_thread(void *par_args);
 extern void publisher_thread(void *par_args);
 extern void subscriber_thread(void *par_args);
-
+extern void publisher_init();
+extern void subscriber_init();
+extern void broker_init();
 
 int main()
 {
@@ -26,6 +28,10 @@ int main()
     pthread_attr_init(&loc_thread_attr);
 
     pthread_create(&loc_thread_broker,&loc_thread_attr,(void*)broker_thread,(void*)&loc_attr[0]);
+
+    broker_init();
+    publisher_init();
+    subscriber_init();
 
     for(loc_count = 0; loc_count < K_MAX_PUBLISHERS; loc_count++)
     {

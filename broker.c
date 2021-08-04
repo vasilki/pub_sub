@@ -109,7 +109,6 @@ void broker_thread(void)
     unsigned int loc_takt = 0;
   //  char loc_buff[20];
 
-    broker_init();
 
     while(loc_takt < 200)
     {
