@@ -102,10 +102,10 @@ void broker_thread(void)
                         printf("<BRO received message:%s\n",(char*)GL_SHMEM_TEMP[loc_count].shmem->app_out_data);
                        break;
                        case 1: /*app*/
-                        memcpy(GL_SHMEM_TEMP[loc_count].shmem->app_out_data,
+                        memcpy(GL_SHMEM_TEMP[loc_count].shmem->app_in_data,
                                GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data,
                                GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size);
-                        GL_SHMEM_TEMP[loc_count].shmem->app_out_data_size = GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size;
+                        GL_SHMEM_TEMP[loc_count].shmem->app_in_data_size = GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size;
 
                         memcpy(GL_BLOCKING_SHMEM[loc_count].shmem->app_in_data,
                                GL_SHMEM_TEMP[0].shmem->app_out_data,
@@ -121,6 +121,7 @@ void broker_thread(void)
             }
         }
 
+        usleep(10000);
         loc_takt++;
     }
 
