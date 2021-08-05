@@ -95,6 +95,8 @@ void broker_thread(void)
                 {
                        case 0: /*publisher*/
                         /*only for data from publisher.c*/
+                        /*Store data from publisher for delivering to subscribers*/
+                        memset(GL_SHMEM_TEMP[loc_count].shmem->app_out_data,0,sizeof(GL_SHMEM_TEMP[loc_count].shmem->app_out_data));
                         memcpy(GL_SHMEM_TEMP[loc_count].shmem->app_out_data,
                                GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data,
                                GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size);
@@ -102,11 +104,15 @@ void broker_thread(void)
                         printf("<BRO received message:%s\n",(char*)GL_SHMEM_TEMP[loc_count].shmem->app_out_data);
                        break;
                        case 1: /*app*/
+                        /*Store data from app for delivering to subscribers*/
+                        memset(GL_SHMEM_TEMP[loc_count].shmem->app_in_data,0,sizeof(GL_SHMEM_TEMP[loc_count].shmem->app_in_data));
                         memcpy(GL_SHMEM_TEMP[loc_count].shmem->app_in_data,
                                GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data,
                                GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size);
                         GL_SHMEM_TEMP[loc_count].shmem->app_in_data_size = GL_BLOCKING_SHMEM[loc_count].shmem->app_out_data_size;
 
+                        /*Send data to app from broker storage*/
+                        memset(GL_BLOCKING_SHMEM[loc_count].shmem->app_in_data,0,sizeof(GL_BLOCKING_SHMEM[loc_count].shmem->app_in_data));
                         memcpy(GL_BLOCKING_SHMEM[loc_count].shmem->app_in_data,
                                GL_SHMEM_TEMP[0].shmem->app_out_data,
                                GL_SHMEM_TEMP[0].shmem->app_out_data_size);

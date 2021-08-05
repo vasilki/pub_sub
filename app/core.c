@@ -18,12 +18,15 @@ void core_thread(void)
     while(loc_takt < 200)
     {
         /*LOCK BLOCKING BUFFER PORT-CORE*/
- /*       sem_wait(&GL_SHARED_BUFFER.mutex);
-        printf("core received: %s\n",GL_SHARED_BUFFER.buffer_sub);
-        snprintf((char*)GL_SHARED_BUFFER.buffer_pub,sizeof(GL_SHARED_BUFFER.buffer_pub),"CORE_%d",loc_takt);
-        printf("core sent: %s\n",GL_SHARED_BUFFER.buffer_pub);
-        sem_post(&GL_SHARED_BUFFER.mutex);
-*/
+
+        sem_wait(&GL_SHARED_BUFFER[K_INDEX_CORE].shmem->mutex);
+        printf("CORE received: %s\n",GL_SHARED_BUFFER[K_INDEX_CORE].shmem->app_in_data);
+        sprintf((char*)GL_SHARED_BUFFER[K_INDEX_CORE].shmem->app_out_data,"CORE_%d",loc_takt);
+        GL_SHARED_BUFFER[K_INDEX_CORE].shmem->app_out_data_size = strnlen(GL_SHARED_BUFFER[K_INDEX_CORE].shmem->app_out_data,K_DATA_SIZE);
+        printf("core sent: %s\n",GL_SHARED_BUFFER[K_INDEX_CORE].shmem->app_out_data);
+        sem_post(&GL_SHARED_BUFFER[K_INDEX_CORE].shmem->mutex);
+
+        usleep(150);
         loc_takt++;
     }
 
@@ -33,14 +36,6 @@ void core_thread(void)
 
 void core_init()
 {
-    static pthread_t loc_thread_core;
-    static pthread_attr_t loc_thread_attr;
-    static unsigned char loc_attr[8];
-
-
-    pthread_attr_init(&loc_thread_attr);
-    pthread_create(&loc_thread_core,&loc_thread_attr,(void*)core_thread,(void*)&loc_attr[0]);
-    pthread_join(loc_thread_core,NULL);
 
     return;
 }

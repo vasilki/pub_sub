@@ -10,25 +10,28 @@
 #include <fcntl.h>
 #include "app.h"
 
+
 static T_SHMEM GL_SHMEM_APP[] =
 {
     {"SHMEM_APP", 0}
 };
 static unsigned int GL_SHMEM_APP_NUMBER = sizeof(GL_SHMEM_APP)/sizeof(GL_SHMEM_APP[0]);
 
-static T_SHMEM GL_SHARED_BUFFER;
-static unsigned char GL_TEMP_BUFFER_PUB[K_DATA_SIZE];
-static unsigned char GL_TEMP_BUFFER_SUB[K_DATA_SIZE];
+T_SHMEM GL_SHARED_BUFFER[2];
+unsigned int GL_SHARED_BUFFERS_NUMBER = sizeof(GL_SHARED_BUFFER)/sizeof(GL_SHARED_BUFFER[0]);
+
 
 void port_shmem_init()
 {
     unsigned int loc_count;
     int loc_fd;
 
-    GL_SHARED_BUFFER.shmem = malloc(sizeof(T_BLOCKING_SHMEM));
-    memset(GL_SHARED_BUFFER.shmem,0,sizeof(T_BLOCKING_SHMEM));
-
-    sem_init(&GL_SHARED_BUFFER.shmem->mutex, 1, 1);
+    for(loc_count = 0; loc_count < GL_SHARED_BUFFERS_NUMBER; loc_count++)
+    {
+        GL_SHARED_BUFFER[loc_count].shmem = malloc(sizeof(T_BLOCKING_SHMEM));
+        memset(GL_SHARED_BUFFER[loc_count].shmem,0,sizeof(T_BLOCKING_SHMEM));
+        sem_init(&GL_SHARED_BUFFER[loc_count].shmem->mutex, 1, 1);
+    }
 
     for(loc_count = 0; loc_count < GL_SHMEM_APP_NUMBER; loc_count++)
     {
@@ -49,36 +52,48 @@ void port_thread(void)
 {
     unsigned int loc_count;
     unsigned int loc_takt = 0;
-    char loc_buff[20];
 
     while(loc_takt < 200)
     {
-        /*LOCK BLOCKING BUFFER PORT-CORE*/
-        /*
-        sem_wait(&GL_SHARED_BUFFER.mutex);
-        memcpy(GL_TEMP_BUFFER_PUB,GL_SHARED_BUFFER.buffer_pub,GL_SHARED_BUFFER.size_pub);
-        memcpy(GL_SHARED_BUFFER.buffer_sub,GL_TEMP_BUFFER_SUB,GL_SHARED_BUFFER.size_sub);
-        sem_post(&GL_SHARED_BUFFER.mutex);
-*/
 
         /*READ DATA FROM BROKER*/
         for(loc_count = 0; loc_count < GL_SHMEM_APP_NUMBER; loc_count++)
         {
             sem_wait(&GL_SHMEM_APP[loc_count].shmem->ready);
             sem_wait(&GL_SHMEM_APP[loc_count].shmem->mutex);
-            memcpy(GL_SHARED_BUFFER.shmem->app_in_data,
+
+            /*Store data from broker to internal shared buffer*/
+            memcpy(GL_SHARED_BUFFER[K_INDEX_PORT].shmem->app_in_data,
                    GL_SHMEM_APP[loc_count].shmem->app_in_data,
                    GL_SHMEM_APP[loc_count].shmem->app_in_data_size);
-            GL_SHARED_BUFFER.shmem->app_in_data_size = GL_SHMEM_APP[loc_count].shmem->app_in_data_size;
-            printf(">PORT received message:%s\n",(char*)GL_SHARED_BUFFER.shmem->app_in_data);
+            GL_SHARED_BUFFER[K_INDEX_PORT].shmem->app_in_data_size = GL_SHMEM_APP[loc_count].shmem->app_in_data_size;
+            printf(">PORT received message:%s\n",(char*)GL_SHARED_BUFFER[K_INDEX_PORT].shmem->app_in_data);
+
+            /*Send data to broker from internal shared buffer*/
             memcpy(GL_SHMEM_APP[loc_count].shmem->app_out_data,
-                   GL_SHARED_BUFFER.shmem->app_out_data,
-                   GL_SHMEM_APP[loc_count].shmem->app_out_data_size);
-            GL_SHMEM_APP[loc_count].shmem->app_out_data_size = GL_SHARED_BUFFER.shmem->app_out_data_size;
+                   GL_SHARED_BUFFER[K_INDEX_PORT].shmem->app_out_data,
+                   GL_SHARED_BUFFER[K_INDEX_PORT].shmem->app_out_data_size);
+            GL_SHMEM_APP[loc_count].shmem->app_out_data_size = GL_SHARED_BUFFER[K_INDEX_PORT].shmem->app_out_data_size;
             sem_post(&GL_SHMEM_APP[loc_count].shmem->mutex);
         }
 
+        sem_wait(&GL_SHARED_BUFFER[K_INDEX_CORE].shmem->mutex);
 
+
+        memcpy(GL_SHARED_BUFFER[K_INDEX_CORE].shmem->app_in_data,
+               GL_SHARED_BUFFER[K_INDEX_PORT].shmem->app_in_data,
+               GL_SHARED_BUFFER[K_INDEX_PORT].shmem->app_in_data_size);
+        GL_SHARED_BUFFER[K_INDEX_CORE].shmem->app_in_data_size = GL_SHARED_BUFFER[K_INDEX_PORT].shmem->app_in_data_size;
+
+        memcpy(GL_SHARED_BUFFER[K_INDEX_PORT].shmem->app_out_data,
+               GL_SHARED_BUFFER[K_INDEX_CORE].shmem->app_out_data,
+               GL_SHARED_BUFFER[K_INDEX_CORE].shmem->app_out_data_size);
+        GL_SHARED_BUFFER[K_INDEX_PORT].shmem->app_out_data_size = GL_SHARED_BUFFER[K_INDEX_CORE].shmem->app_out_data_size;
+
+
+        sem_post(&GL_SHARED_BUFFER[K_INDEX_CORE].shmem->mutex);
+
+        usleep(100);
         loc_takt++;
 
 
@@ -87,6 +102,7 @@ void port_thread(void)
     return;
 }
 
+extern void core_init();
 
 void port_init()
 {
@@ -96,9 +112,7 @@ void port_init()
 
     port_shmem_init();
 
-    pthread_attr_init(&loc_thread_attr);
-    pthread_create(&loc_thread_port,&loc_thread_attr,(void*)port_thread,(void*)&loc_attr[0]);
-    pthread_join(loc_thread_port,NULL);
+    core_init();
 
     return;
 }

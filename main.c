@@ -12,14 +12,18 @@ extern void publisher_thread(void *par_args);
 extern void subscriber_thread(void *par_args);
 extern void publisher_init();
 extern void port_init();
+extern void port_thread(void *par_args);
 extern void core_init();
+extern void core_thread(void *par_args);
+
 extern void broker_init();
 
 int main()
 {
     static pthread_t loc_thread_broker;
     static pthread_t loc_thread_publisher[K_MAX_PUBLISHERS];
-//    static pthread_t loc_thread_subscriber[K_MAX_SUBSCRIBERS];
+    static pthread_t loc_thread_port;
+    static pthread_t loc_thread_core;
     static pthread_attr_t loc_thread_attr;
     static unsigned char loc_attr[100];
     unsigned int loc_count;
@@ -42,27 +46,21 @@ int main()
     }
 
     port_init();
-    core_init();
 
-    for(loc_count = 0; loc_count < K_MAX_SUBSCRIBERS; loc_count++)
-    {
-//        pthread_create(&loc_thread_subscriber[loc_count],&loc_thread_attr,(void*)subscriber_thread,(void*)&loc_attr[0]);
-    }
-
+    pthread_create(&loc_thread_port,&loc_thread_attr,(void*)port_thread,(void*)&loc_attr[0]);
+    pthread_create(&loc_thread_core,&loc_thread_attr,(void*)core_thread,(void*)&loc_attr[0]);
 
     pthread_join(loc_thread_broker,NULL);
+    pthread_join(loc_thread_port,NULL);
+    pthread_join(loc_thread_core,NULL);
 
     for(loc_count = 0; loc_count < K_MAX_PUBLISHERS; loc_count++)
     {
         pthread_join(loc_thread_publisher[loc_count],NULL);
       //  pthread_detach(loc_thread_publisher[loc_count]);
     }
-/*
-    for(loc_count = 0; loc_count < K_MAX_SUBSCRIBERS; loc_count++)
-    {
-        pthread_join(loc_thread_subscriber[loc_count],NULL);
-    }
-*/
+
+
     return 0;
 }
 
