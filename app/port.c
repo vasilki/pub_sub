@@ -70,7 +70,7 @@ void port_thread(void)
                    GL_SHMEM_APP[loc_count].shmem->app_in_data,
                    GL_SHMEM_APP[loc_count].shmem->app_in_data_size);
             GL_SHARED_BUFFER.shmem->app_in_data_size = GL_SHMEM_APP[loc_count].shmem->app_in_data_size;
-            printf(">SUB received message:%s\n",(char*)GL_SHARED_BUFFER.shmem->app_in_data);
+            printf(">PORT received message:%s\n",(char*)GL_SHARED_BUFFER.shmem->app_in_data);
             memcpy(GL_SHMEM_APP[loc_count].shmem->app_out_data,
                    GL_SHARED_BUFFER.shmem->app_out_data,
                    GL_SHMEM_APP[loc_count].shmem->app_out_data_size);

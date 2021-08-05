@@ -53,8 +53,9 @@ void publisher_thread(void)
             sprintf(loc_buff,"PUB:%d",loc_pr);
             sem_wait(&GL_SHMEM_PUBLISHERS[loc_count].shmem->ready);
             sem_wait(&GL_SHMEM_PUBLISHERS[loc_count].shmem->mutex);
+            GL_SHMEM_PUBLISHERS[loc_count].shmem->app_out_data_size = strnlen(loc_buff,K_DATA_SIZE);
             memcpy(GL_SHMEM_PUBLISHERS[loc_count].shmem->app_out_data,loc_buff,
-                   strnlen(loc_buff,GL_SHMEM_PUBLISHERS[loc_count].shmem->app_out_data_size));
+                   GL_SHMEM_PUBLISHERS[loc_count].shmem->app_out_data_size);
             printf(">PUB sent message PUB:%d\n",loc_pr);
             sem_post(&GL_SHMEM_PUBLISHERS[loc_count].shmem->mutex);
         }
